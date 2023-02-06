@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 
 pub enum BinOp {
-  OpAdd, OpSub, OpMul, OpDiv, OpMod, OpGT, OpGTE, OpLT, OpLTE, OpEq,
-  OpIndex
+  OpAdd, OpSub, OpMul, OpDiv, OpMod,
+  OpGT, OpGTE, OpLT, OpLTE, OpEq,
+  OpAnd, OpOr, OpXor,
+  OpIndex,
 }
 
 pub struct FieldVal<'a> {
@@ -15,8 +17,9 @@ pub enum Expr<'a> {
   CharLit(char),
   StringLit(String),
   BinOp(BinOp, Box<Expr<'a>>, Box<Expr<'a>>),
+  Not(Box<Expr<'a>>),
   Var(&'a str),
-  FunCall(&'a str, Option<Vec<Type<'a>>>, Vec<Expr<'a>>),
+  FunCall(&'a str, Vec<Type<'a>>, Vec<Expr<'a>>),
   Record(&'a str, Vec<FieldVal<'a>>),
   Tuple(Vec<Expr<'a>>),
   ListLit(Vec<Expr<'a>>),
@@ -24,19 +27,40 @@ pub enum Expr<'a> {
   Deref(Box<Expr<'a>>),
 }
 
-pub enum Type<'a> {
+type Meta<'a> = &'a mut Option<PreType<'a>>;
+pub enum PreType<'a> {
   Int32,
   Boolean,
   Char,
   Prod(Vec<Type<'a>>),
-  List(Box<Type<'a>>, i32),
+  List(Type<'a>, Expr<'a>),
   TypVar(&'a str),
-  Ptr(Box<Type<'a>>),
+  Ptr(Type<'a>),
+}
+pub enum TypeModifier {Mut, Immut, Pure}
+pub struct Type<'a> {
+  pretype : Meta<'a>,
+  modifier : TypeModifier,
 }
 
+
+
+pub enum Pattern<'a> {
+  PatWildcard,
+  PatVar(String),
+  PatTuple(Vec<Pattern<'a>>),
+  PatOr(Vec<Pattern<'a>>),
+  PatList(Vec<Pattern<'a>>),
+  PatCtor(&'a str, Box<Pattern<'a>>),
+}
+pub struct Branch<'a> {
+  pat : Pattern<'a>,
+  bod : Expr<'a>,
+}
 pub enum Stmt<'a> {
   IfThen(Expr<'a>, Box<Stmt<'a>>),
   IfThenElse(Expr<'a>, Box<Stmt<'a>>, Box<Stmt<'a>>),
+  Match(Expr<'a>, Vec<Branch<'a>>),
   Block(Vec<Stmt<'a>>),
   ForLoop(Box<Stmt<'a>>, Expr<'a>, Box<Stmt<'a>>, Box<Stmt<'a>>),
   WhileLoop(Expr<'a>, Box<Stmt<'a>>),
@@ -47,13 +71,13 @@ pub enum Stmt<'a> {
 
 pub struct Param<'a> {
   nam : String,
-  typ : Option<Type<'a>>,
+  typ : Type<'a>,
 }
 pub struct FunDefn<'a> {
   nam : String,
   tparams : Vec<TypParam>,
   params : Vec<Param<'a>>,
-  ret : Option<Type<'a>>,
+  ret : Type<'a>,
   bod : Stmt<'a>,
 }
 pub struct TypParam {
