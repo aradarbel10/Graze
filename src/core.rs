@@ -3,7 +3,7 @@
 pub enum BinOp {
   OpAdd, OpSub, OpMul, OpDiv, OpMod,
   OpGT, OpGTE, OpLT, OpLTE, OpEq,
-  OpAnd, OpOr, OpXor,
+  OpAnd, OpOr, OpXor, Shl, Shr,
   OpIndex,
 }
 
@@ -16,15 +16,20 @@ pub enum Expr<'a> {
   BoolLit(bool),
   CharLit(char),
   StringLit(String),
+  Unit,
   BinOp(BinOp, Box<Expr<'a>>, Box<Expr<'a>>),
   Not(Box<Expr<'a>>),
   Var(&'a str),
   FunCall(&'a str, Vec<Type<'a>>, Vec<Expr<'a>>),
   Record(&'a str, Vec<FieldVal<'a>>),
+  Proj(Box<Expr<'a>>, &'a str),
   Tuple(Vec<Expr<'a>>),
   ListLit(Vec<Expr<'a>>),
-  Ref(Box<Expr<'a>>),
   Deref(Box<Expr<'a>>),
+  NewRegion,
+  New(Box<Expr<'a>>),
+  Allocate(Box<Expr<'a>>, Box<Expr<'a>>),
+  Free(Box<Expr<'a>>),
 }
 
 type Meta<'a> = &'a mut Option<PreType<'a>>;
@@ -32,15 +37,18 @@ pub enum PreType<'a> {
   Int32,
   Boolean,
   Char,
+  Unit,
   Prod(Vec<Type<'a>>),
   List(Type<'a>, Expr<'a>),
   TypVar(&'a str),
+  TypApp(&'a str, Vec<Type<'a>>),
   Ptr(Type<'a>),
+  Region,
 }
 pub enum TypeModifier {Mut, Immut, Pure}
 pub struct Type<'a> {
-  pretype : Meta<'a>,
-  modifier : TypeModifier,
+  pub pretype : Meta<'a>,
+  pub modifier : TypeModifier,
 }
 
 
@@ -66,6 +74,7 @@ pub enum Stmt<'a> {
   WhileLoop(Expr<'a>, Box<Stmt<'a>>),
   VarDecl(String, Type<'a>, Expr<'a>),
   VarAssgn(Expr<'a>, Expr<'a>),
+  ExprStmt(Expr<'a>),
   Return(Expr<'a>),
 }
 

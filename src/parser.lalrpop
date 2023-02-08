@@ -1,0 +1,127 @@
+use std::str::FromStr;
+use crate::raw::*;
+
+grammar;
+
+Comma<T> : Vec<T> = {
+  <mut v : (<T> ",")*> <e:T?> => match e {
+    None => v,
+    Some(e) => {
+      v.push(e);
+      v
+    }
+  }
+};
+
+CommaTwo<T> : Vec<T> = {
+  <v : T> "," <mut vs : Comma<T>> => {
+    vs.insert(0, v);
+    vs
+  }
+};
+
+
+Num : i32 = <s : r"[0-9]+"> => i32::from_str(s).unwrap();
+Char : char = <c : r"'.'"> => char::from_str(c).unwrap();
+Ident : String = <id : r"[a-zA-Z][a-zA-Z0-9]*"> => id.to_string();
+
+// multiple [P]recedence levels
+OpP1 : BinOp = {
+  ">"  => BinOp::GT,
+  ">=" => BinOp::GTE,
+  "<"  => BinOp::LT,
+  "<=" => BinOp::LTE,
+  "==" => BinOp::Eq,
+};
+ExprP1 : Box<Expr> = {
+  <l : ExprP2> <op : OpP1> <r : ExprP2> => Box::new(Expr::BinOp(op, l, r)),
+  <l : ExprP1> "@" <r : ExprP2> => Box::new(Expr::BinOp(BinOp::Index, l, r)),
+  ExprP2
+};
+
+OpP2 : BinOp = {
+  "+"  => BinOp::Add,
+  "-"  => BinOp::Sub,
+  "||" => BinOp::Or,
+};
+ExprP2 : Box<Expr> = {
+  <l : ExprP2> <op : OpP2> <r : ExprP3> => Box::new(Expr::BinOp(op, l, r)),
+  ExprP3,
+};
+
+OpP3 : BinOp = {
+  "*"  => BinOp::Mul,
+  "/"  => BinOp::Div,
+  "%"  => BinOp::Mod,
+  "&&" => BinOp::And,
+  "^^" => BinOp::Xor,
+};
+ExprP3 : Box<Expr> = {
+  <l : ExprP3> <op : OpP3> <r : ExprPrefix> => Box::new(Expr::BinOp(op, l, r)),
+  <e : ExprPrefix> => e,
+};
+
+ExprPrefix : Box<Expr> = {
+  "!" <e : ExprPrefix> => Box::new(Expr::Deref(e)),
+  "~" <e : ExprPrefix> => Box::new(Expr::Not(e)),
+  "new" <e : ExprPrefix> => Box::new(Expr::New(e)),
+  "free" <e : ExprPrefix> => Box::new(Expr::Free(e)),
+  "allocate" <e : Atom> "in" <r : ExprPrefix> =>
+    Box::new(Expr::Allocate(e, r)),
+  Atom,
+};
+
+Atom : Box<Expr> = {
+  <id : Ident> => Box::new(Expr::Var(id)),
+  // literals
+  <n : Num> => Box::new(Expr::IntLit(n)),
+  "true" => Box::new(Expr::BoolLit(true)),
+  "false" => Box::new(Expr::BoolLit(false)),
+  <c : Char> => Box::new(Expr::CharLit(c)),
+  "()" => Box::new(Expr::Unit),
+  // operators
+  "(" <e : ExprP1> ")" => e,
+  // function calls
+  <f : Ident> "(" <args : Comma<Expr>> ")" =>
+    Box::new(
+      Expr::FunCall(f, None, args.into_iter().map(|boxed| *boxed).collect())
+    ),
+  <f : Ident> "[" <targs : Comma<Type>> "]" "(" <args : Comma<Expr>> ")" =>
+    Box::new(  
+      Expr::FunCall(f,
+        Some(targs),
+        args.into_iter().map(|boxed| *boxed).collect())
+    ),
+  // products
+  <r : Ident> "{" <fs : Comma<FieldVal>> "}" => Box::new(Expr::Record(r, fs)),
+  <e : Atom> "." <l : Ident> => Box::new(Expr::Proj(e, l)),
+  "(" <es : CommaTwo<Expr>> ")" =>
+    Box::new(Expr::Tuple(
+      es.into_iter().map(|boxed| *boxed).collect()
+    )),
+  "[" <es : Comma<Expr>> "]" =>
+    Box::new(Expr::ListLit(
+      es.into_iter().map(|boxed| *boxed).collect()
+    )),
+  // memory
+  "new" "region" => Box::new(Expr::NewRegion),
+};
+
+FieldVal : FieldVal = {
+  <n : Ident> "=" <v : Expr> => FieldVal {
+    nam: n,
+    val: v,
+  }
+};
+
+pub Expr = { ExprP1 }
+
+
+
+// Type grammar
+PreType : PreType = {
+  "i32" => PreType::Int32,
+}
+Type : Type = {
+  <t : PreType> => Type {pretype: Box::new(t), modifier: TypeModifier::Immut},
+}

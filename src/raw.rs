@@ -1,45 +1,59 @@
 #![allow(dead_code)]
 
+#[derive(Debug)]
 pub enum BinOp {
-  OpAdd, OpSub, OpMul, OpDiv, OpMod,
-  OpGT, OpGTE, OpLT, OpLTE, OpEq,
-  OpAnd, OpOr, OpXor,
-  OpIndex,
+  Add, Sub, Mul, Div, Mod,
+  GT, GTE, LT, LTE, Eq,
+  And, Or, Xor, Shl, Shr,
+  Index,
 }
 
+#[derive(Debug)]
 pub struct FieldVal {
-  nam : String,
-  val : Box<Expr>,
+  pub nam : String,
+  pub val : Box<Expr>,
 }
+#[derive(Debug)]
 pub enum Expr {
   IntLit(i32),
   BoolLit(bool),
   CharLit(char),
   StringLit(String),
+  Unit,
   BinOp(BinOp, Box<Expr>, Box<Expr>),
   Not(Box<Expr>),
   Var(String),
   FunCall(String, Option<Vec<Type>>, Vec<Expr>),
   Record(String, Vec<FieldVal>),
+  Proj(Box<Expr>, String),
   Tuple(Vec<Expr>),
   ListLit(Vec<Expr>),
-  Ref(Box<Expr>),
   Deref(Box<Expr>),
+  NewRegion,
+  New(Box<Expr>),
+  Allocate(Box<Expr>, Box<Expr>),
+  Free(Box<Expr>),
 }
 
+#[derive(Debug)]
 pub enum PreType {
   Int32,
   Boolean,
   Char,
+  Unit,
   Prod(Vec<Type>),
   List(Type, Expr),
   TypVar(String),
+  TypApp(String, Vec<Type>),
   Ptr(Type),
+  Region,
 }
+#[derive(Debug)]
 pub enum TypeModifier {Mut, Immut, Pure}
+#[derive(Debug)]
 pub struct Type {
-  pretype : Box<PreType>,
-  modifier : TypeModifier,
+  pub pretype : Box<PreType>,
+  pub modifier : TypeModifier,
 }
 
 pub enum Pattern {
@@ -63,6 +77,7 @@ pub enum Stmt {
   WhileLoop(Expr, Box<Stmt>),
   VarDecl(Pattern, Option<Type>, Expr),
   VarAssgn(Expr, Expr),
+  ExprStmt(Expr),
   Return(Expr),
 }
 
