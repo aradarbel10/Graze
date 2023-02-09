@@ -36,24 +36,18 @@ pub enum Expr {
 }
 
 #[derive(Debug)]
-pub enum PreType {
+pub enum Type {
   Int32,
   Boolean,
   Char,
   Unit,
+  Mut(Box<Type>),
   Prod(Vec<Type>),
-  List(Type, Expr),
+  List(Box<Type>, i32),
   TypVar(String),
   TypApp(String, Vec<Type>),
-  Ptr(Type),
+  Ptr(Box<Type>),
   Region,
-}
-#[derive(Debug)]
-pub enum TypeModifier {Mut, Immut, Pure}
-#[derive(Debug)]
-pub struct Type {
-  pub pretype : Box<PreType>,
-  pub modifier : TypeModifier,
 }
 
 pub enum Pattern {

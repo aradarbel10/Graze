@@ -32,23 +32,19 @@ pub enum Expr<'a> {
   Free(Box<Expr<'a>>),
 }
 
-type Meta<'a> = &'a mut Option<PreType<'a>>;
-pub enum PreType<'a> {
+type Meta<'a> = &'a mut Option<Type<'a>>;
+pub enum Type<'a> {
   Int32,
   Boolean,
   Char,
   Unit,
+  Mut(Box<Type<'a>>),
   Prod(Vec<Type<'a>>),
-  List(Type<'a>, Expr<'a>),
+  List(Box<Type<'a>>, i32),
   TypVar(&'a str),
   TypApp(&'a str, Vec<Type<'a>>),
-  Ptr(Type<'a>),
+  Ptr(Box<Type<'a>>),
   Region,
-}
-pub enum TypeModifier {Mut, Immut, Pure}
-pub struct Type<'a> {
-  pub pretype : Meta<'a>,
-  pub modifier : TypeModifier,
 }
 
 

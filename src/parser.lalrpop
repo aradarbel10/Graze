@@ -61,15 +61,15 @@ ExprP3 : Box<Expr> = {
   <e : ExprPrefix> => e,
 };
 
-ExprPrefix : Box<Expr> = {
-  "!" <e : ExprPrefix> => Box::new(Expr::Deref(e)),
-  "~" <e : ExprPrefix> => Box::new(Expr::Not(e)),
-  "new" <e : ExprPrefix> => Box::new(Expr::New(e)),
-  "free" <e : ExprPrefix> => Box::new(Expr::Free(e)),
-  "allocate" <e : Atom> "in" <r : ExprPrefix> =>
-    Box::new(Expr::Allocate(e, r)),
-  Atom,
+ExprPrefixUnboxed : Expr = {
+  "!" <e : ExprPrefix> => Expr::Deref(e),
+  "~" <e : ExprPrefix> => Expr::Not(e),
+  "new" <e : ExprPrefix> => Expr::New(e),
+  "free" <e : ExprPrefix> => Expr::Free(e),
+  "allocate" <e : Atom> "in" <r : ExprPrefix> => Expr::Allocate(e, r),
+  <e : Atom> => *e,
 };
+ExprPrefix : Box<Expr> = ExprPrefixUnboxed => Box::new(<>);
 
 Atom : Box<Expr> = {
   <id : Ident> => Box::new(Expr::Var(id)),
@@ -114,14 +114,25 @@ FieldVal : FieldVal = {
   }
 };
 
-pub Expr = { ExprP1 }
+pub Expr = { ExprP1 };
 
 
 
 // Type grammar
-PreType : PreType = {
-  "i32" => PreType::Int32,
-}
-Type : Type = {
-  <t : PreType> => Type {pretype: Box::new(t), modifier: TypeModifier::Immut},
-}
+pub Type : Type = {
+  <t : Type> "#" <n : Num> => Type::List(Box::new(t), n),
+  TypeAtom
+};
+TypeAtom : Type = {
+  "i32" => Type::Int32,
+  "bool" => Type::Boolean,
+  "char" => Type::Char,
+  "()" => Type::Unit,
+  "(" <ts : CommaTwo<Type>> ")" => Type::Prod(ts),
+  <x : Ident> => Type::TypVar(x),
+  <x : Ident> "[" <ts : Comma<Type>> "]" => Type::TypApp(x, ts),
+  "&" <t : TypeAtom> => Type::Ptr(Box::new(t)),
+  "mut" <t : TypeAtom> => Type::Mut(Box::new(t)),
+  "region" => Type::Region,
+  "(" <t : Type> ")" => t,
+};
