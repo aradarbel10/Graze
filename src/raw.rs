@@ -50,25 +50,28 @@ pub enum Type {
   Region,
 }
 
+#[derive(Debug)]
 pub enum Pattern {
-  PatWildcard,
-  PatVar(String),
-  PatTuple(Vec<Pattern>),
-  PatOr(Vec<Pattern>),
-  PatList(Vec<Pattern>),
-  PatCtor(String, Box<Pattern>),
+  Wildcard,
+  Var(String),
+  Tuple(Vec<Pattern>),
+  Or(Vec<Pattern>),
+  List(Vec<Pattern>),
+  Ctor(String, Vec<Pattern>),
 }
+#[derive(Debug)]
 pub struct Branch {
-  pat : Pattern,
-  bod : Expr,
+  pub pat : Pattern,
+  pub bod : Vec<Stmt>,
 }
+#[derive(Debug)]
 pub enum Stmt {
-  IfThen(Expr, Box<Stmt>),
-  IfThenElse(Expr, Box<Stmt>, Box<Stmt>),
+  IfThen(Expr, Vec<Stmt>),
+  IfThenElse(Expr, Vec<Stmt>, Vec<Stmt>),
   Match(Expr, Vec<Branch>),
   Block(Vec<Stmt>),
-  ForLoop(Box<Stmt>, Expr, Box<Stmt>, Box<Stmt>),
-  WhileLoop(Expr, Box<Stmt>),
+  ForEach(String, Expr, Vec<Stmt>),
+  WhileLoop(Expr, Vec<Stmt>),
   VarDecl(Pattern, Option<Type>, Expr),
   VarAssgn(Expr, Expr),
   ExprStmt(Expr),

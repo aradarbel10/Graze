@@ -50,24 +50,24 @@ pub enum Type<'a> {
 
 
 pub enum Pattern<'a> {
-  PatWildcard,
-  PatVar(String),
-  PatTuple(Vec<Pattern<'a>>),
-  PatOr(Vec<Pattern<'a>>),
-  PatList(Vec<Pattern<'a>>),
-  PatCtor(&'a str, Box<Pattern<'a>>),
+  Wildcard,
+  Var(String),
+  Tuple(Vec<Pattern<'a>>),
+  Or(Vec<Pattern<'a>>),
+  List(Vec<Pattern<'a>>),
+  Ctor(&'a str, Vec<Pattern<'a>>),
 }
 pub struct Branch<'a> {
-  pat : Pattern<'a>,
-  bod : Expr<'a>,
+  pub pat : Pattern<'a>,
+  pub bod : Vec<Stmt<'a>>,
 }
 pub enum Stmt<'a> {
-  IfThen(Expr<'a>, Box<Stmt<'a>>),
-  IfThenElse(Expr<'a>, Box<Stmt<'a>>, Box<Stmt<'a>>),
+  IfThen(Expr<'a>, Vec<Stmt<'a>>),
+  IfThenElse(Expr<'a>, Vec<Stmt<'a>>, Vec<Stmt<'a>>),
   Match(Expr<'a>, Vec<Branch<'a>>),
   Block(Vec<Stmt<'a>>),
-  ForLoop(Box<Stmt<'a>>, Expr<'a>, Box<Stmt<'a>>, Box<Stmt<'a>>),
-  WhileLoop(Expr<'a>, Box<Stmt<'a>>),
+  ForEach(String, Expr<'a>, Vec<Stmt<'a>>),
+  WhileLoop(Expr<'a>, Vec<Stmt<'a>>),
   VarDecl(String, Type<'a>, Expr<'a>),
   VarAssgn(Expr<'a>, Expr<'a>),
   ExprStmt(Expr<'a>),

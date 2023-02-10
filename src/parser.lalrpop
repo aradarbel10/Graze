@@ -43,6 +43,8 @@ OpP2 : BinOp = {
   "+"  => BinOp::Add,
   "-"  => BinOp::Sub,
   "||" => BinOp::Or,
+  "<<" => BinOp::Shl,
+  ">>" => BinOp::Shr,
 };
 ExprP2 : Box<Expr> = {
   <l : ExprP2> <op : OpP2> <r : ExprP3> => Box::new(Expr::BinOp(op, l, r)),
@@ -135,4 +137,51 @@ TypeAtom : Type = {
   "mut" <t : TypeAtom> => Type::Mut(Box::new(t)),
   "region" => Type::Region,
   "(" <t : Type> ")" => t,
+};
+
+
+// Pattern language
+PipeTwo<T> : Vec<T> = {
+  <t : T> <mut ts : ("|" <T>)+> => {
+    ts.insert(0, t); ts
+  }
+};
+
+pub Pattern : Pattern = {
+  <ps : PipeTwo<PatternAtom>> => Pattern::Or(ps),
+  PatternAtom,
+};
+
+PatternAtom : Pattern = {
+  "_" => Pattern::Wildcard,
+  Ident => Pattern::Var(<>),
+  "(" <ps : CommaTwo<Pattern>> ")" => Pattern::Tuple(ps),
+  "[" <ps : CommaTwo<Pattern>> "]" => Pattern::List(ps),
+  <x : Ident> "(" <ps : Comma<Pattern>> ")" => Pattern::Ctor(x, ps),
+  "(" <p : Pattern> ")" => p,
+};
+
+
+// Statements
+pub Block : Vec<Stmt> = <ss : Stmt+> => ss;
+
+Branch : Branch = {
+  "|" <p : Pattern> "=>" <b : Block> => Branch {pat: p, bod: b},
+};
+
+pub Stmt : Stmt = {
+  "if" <e : Expr> "then" <b : Block> "end" => Stmt::IfThen(*e, b),
+  "if" <e : Expr> "then" <b1 : Block> "else" <b2 : Block> "end" =>
+    Stmt::IfThenElse(*e, b1, b2),
+  "match" <e : Expr> "with" <bs : Branch+> "end" => Stmt::Match(*e, bs),
+  "begin" <b : Block> "end" => Stmt::Block(b),
+  "foreach" <x : Ident> "in" <e : Expr> "do" <b : Block> "end" =>
+    Stmt::ForEach(x, *e, b),
+  "while" <e : Expr> "do" <b : Block> "end" => Stmt::WhileLoop(*e, b),
+  "let" <p : Pattern> <t : (":" <Type>)?> "=" <e : Expr> ";" =>
+    Stmt::VarDecl(p, t, *e),
+  "set" <l : Expr> "=" <r : Expr> ";" =>
+    Stmt::VarAssgn(*l, *r),
+  "ret" <e : Expr> ";" => Stmt::Return(*e),
+  <e : Expr> ";" => Stmt::ExprStmt(*e),
 };
