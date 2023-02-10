@@ -21,7 +21,7 @@ CommaTwo<T> : Vec<T> = {
 
 Num : i32 = <s : r"[0-9]+"> => i32::from_str(s).unwrap();
 Char : char = <c : r"'.'"> => char::from_str(c).unwrap();
-Ident : String = <id : r"[a-zA-Z][a-zA-Z0-9]*"> => id.to_string();
+Ident : String = <id : r"[a-zA-Z][a-zA-Z0-9_]*"> => id.to_string();
 
 // multiple [P]recedence levels
 OpP1 : BinOp = {
@@ -78,7 +78,7 @@ Atom : Box<Expr> = {
   "true" => Box::new(Expr::BoolLit(true)),
   "false" => Box::new(Expr::BoolLit(false)),
   <c : Char> => Box::new(Expr::CharLit(c)),
-  "()" => Box::new(Expr::Unit),
+  "(" ")" => Box::new(Expr::Unit),
   // operators
   "(" <e : ExprP1> ")" => e,
   // function calls
@@ -127,7 +127,7 @@ TypeAtom : Type = {
   "i32" => Type::Int32,
   "bool" => Type::Boolean,
   "char" => Type::Char,
-  "()" => Type::Unit,
+  "(" ")" => Type::Unit,
   "(" <ts : CommaTwo<Type>> ")" => Type::Prod(ts),
   <x : Ident> => Type::TypVar(x),
   <x : Ident> "[" <ts : CommaOne<Type>> "]" => Type::TypApp(x, ts),
@@ -265,4 +265,4 @@ Decl : Decl = {
     Decl::Type(x, tps, t),
 };
 
-pub Prog = Decl*
+pub Prog = Decl*;

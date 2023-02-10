@@ -78,10 +78,12 @@ pub enum Stmt {
   Return(Expr),
 }
 
+#[derive(Debug)]
 pub struct Param {
   pub nam : String,
   pub typ : Option<Type>,
 }
+#[derive(Debug)]
 pub struct FunDefn {
   pub nam : String,
   pub tparams : Vec<TypParam>,
@@ -89,20 +91,24 @@ pub struct FunDefn {
   pub ret : Option<Type>,
   pub bod : Vec<Stmt>,
 }
+#[derive(Debug)]
 pub struct TypParam {
   pub nam : String,
   pub sups : Vec<String>,
 }
+#[derive(Debug)]
 pub struct Field {
   pub nam : String,
   pub typ : Type,
 }
+#[derive(Debug)]
 pub struct Sig {
   pub nam : String,
   pub tparams : Vec<TypParam>,
   pub params : Vec<Field>,
   pub ret : Type,
 }
+#[derive(Debug)]
 pub enum Decl {
   Fun(FunDefn),
   Record(String, Vec<TypParam>, Vec<Field>),

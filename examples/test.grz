@@ -1,0 +1,20 @@
+record Point = {
+  x : i32,
+  y : i32
+}
+
+fun main() : () =
+  let opt : Option[i32] = Some(42);
+
+  let is_positive : bool = false;
+  match opt with
+  | Some(n) =>
+    if n > 0 then
+      set is_positive = true;
+    end
+  | None =>
+    set is_positive = false;
+  end
+
+  ret is_positive;
+end
