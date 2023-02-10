@@ -79,34 +79,35 @@ pub enum Stmt {
 }
 
 pub struct Param {
-  nam : String,
-  typ : Option<Type>,
+  pub nam : String,
+  pub typ : Option<Type>,
 }
 pub struct FunDefn {
-  nam : String,
-  tparams : Vec<TypParam>,
-  params : Vec<Param>,
-  ret : Option<Type>,
-  bod : Stmt,
+  pub nam : String,
+  pub tparams : Vec<TypParam>,
+  pub params : Vec<Param>,
+  pub ret : Option<Type>,
+  pub bod : Vec<Stmt>,
 }
 pub struct TypParam {
-  nam : String,
-  sups : Vec<String>,
+  pub nam : String,
+  pub sups : Vec<String>,
 }
 pub struct Field {
-  nam : String,
-  typ : Type,
+  pub nam : String,
+  pub typ : Type,
 }
 pub struct Sig {
-  nam : String,
-  tparams : Vec<TypParam>,
-  params : Vec<(String, Type)>,
-  ret : Type,
+  pub nam : String,
+  pub tparams : Vec<TypParam>,
+  pub params : Vec<Field>,
+  pub ret : Type,
 }
 pub enum Decl {
-  FunDecl(FunDefn),
-  RecordDecl(String, Vec<TypParam>, Vec<Field>),
-  VariantDecl(String, Vec<TypParam>, Vec<Field>),
-  ClassDecl(String, TypParam, Vec<Sig>),
-  ImplDecl(String, Type, Vec<FunDefn>),
+  Fun(FunDefn),
+  Record(String, Vec<TypParam>, Vec<Field>),
+  Variant(String, Vec<TypParam>, Vec<Field>),
+  Class(String, TypParam, Vec<Sig>),
+  Impl(String, Type, Vec<FunDefn>),
+  Type(String, Vec<TypParam>, Type),
 }

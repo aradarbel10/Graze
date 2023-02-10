@@ -4,20 +4,18 @@ use crate::raw::*;
 grammar;
 
 Comma<T> : Vec<T> = {
-  <mut v : (<T> ",")*> <e:T?> => match e {
-    None => v,
-    Some(e) => {
-      v.push(e);
-      v
-    }
+  <ts : (CommaOne<T>)?> => match ts {
+    None => vec![],
+    Some(ts) => ts,
   }
 };
 
+CommaOne<T> : Vec<T> = {
+  <t : T> <mut ts : ("," <T>)*> => { ts.insert(0, t); ts }
+};
+
 CommaTwo<T> : Vec<T> = {
-  <v : T> "," <mut vs : Comma<T>> => {
-    vs.insert(0, v);
-    vs
-  }
+  <t : T> <mut ts : ("," <T>)+> => { ts.insert(0, t); ts }
 };
 
 
@@ -88,7 +86,7 @@ Atom : Box<Expr> = {
     Box::new(
       Expr::FunCall(f, None, args.into_iter().map(|boxed| *boxed).collect())
     ),
-  <f : Ident> "[" <targs : Comma<Type>> "]" "(" <args : Comma<Expr>> ")" =>
+  <f : Ident> "[" <targs : CommaOne<Type>> "]" "(" <args : Comma<Expr>> ")" =>
     Box::new(  
       Expr::FunCall(f,
         Some(targs),
@@ -132,7 +130,7 @@ TypeAtom : Type = {
   "()" => Type::Unit,
   "(" <ts : CommaTwo<Type>> ")" => Type::Prod(ts),
   <x : Ident> => Type::TypVar(x),
-  <x : Ident> "[" <ts : Comma<Type>> "]" => Type::TypApp(x, ts),
+  <x : Ident> "[" <ts : CommaOne<Type>> "]" => Type::TypApp(x, ts),
   "&" <t : TypeAtom> => Type::Ptr(Box::new(t)),
   "mut" <t : TypeAtom> => Type::Mut(Box::new(t)),
   "region" => Type::Region,
@@ -141,10 +139,17 @@ TypeAtom : Type = {
 
 
 // Pattern language
-PipeTwo<T> : Vec<T> = {
-  <t : T> <mut ts : ("|" <T>)+> => {
-    ts.insert(0, t); ts
+Pipe<T> : Vec<T> = {
+  <ts : (PipeOne<T>)?> => match ts {
+    None => vec![],
+    Some(ts) => ts,
   }
+}
+PipeOne<T> : Vec<T> = {
+  <t : T> <mut ts : ("|" <T>)*> => { ts.insert(0, t); ts }
+};
+PipeTwo<T> : Vec<T> = {
+  <t : T> <mut ts : ("|" <T>)+> => { ts.insert(0, t); ts }
 };
 
 pub Pattern : Pattern = {
@@ -185,3 +190,79 @@ pub Stmt : Stmt = {
   "ret" <e : Expr> ";" => Stmt::Return(*e),
   <e : Expr> ";" => Stmt::ExprStmt(*e),
 };
+
+
+// Top level
+TypParam : TypParam = {
+  <x : Ident> "of" <cs : Constraints> => TypParam {nam: x, sups: cs},
+};
+Constraints : Vec<String> = {
+  Ident => vec![<>],
+  "(" <cs : Comma<Ident>> ")" => cs,
+};
+TypParams : Vec<TypParam> = {
+  <tps : ("[" <CommaOne<TypParam>> "]")?> => match tps {
+    None => vec![],
+    Some(tps) => tps,
+  }
+}
+
+Param : Param = {
+  <x : Ident> <t : (":" <Type>)?> => Param {nam: x, typ : t},
+};
+Field : Field = {
+  <x : Ident> ":" <t : Type> => Field {nam: x, typ: t},
+};
+Case : Field = {
+  <x : Ident> "of" <t : Type> => Field {nam: x, typ: t},
+};
+
+Sig : Sig = {
+  "fun" <x : Ident>
+    <tps : TypParams>
+    "(" <ps : Comma<Field>> ")"
+    ":" <t : Type> => Sig {
+      nam: x,
+      tparams: tps,
+      params: ps,
+      ret: t,
+    },
+};
+
+FunDefn : FunDefn = {
+  "fun" <x : Ident>
+  <tps : TypParams>
+  "(" <ps : Comma<Param>> ")"
+  <t : (":" <Type>)?> "="
+  <b : Block>
+  "end" => FunDefn {
+    nam: x,
+    tparams: tps,
+    params: ps,
+    ret: t,
+    bod: b,
+  },
+};
+
+Decl : Decl = {
+  FunDefn => Decl::Fun(<>),
+
+  "record" <x : Ident> <tps : TypParams> "=" "{"
+    <fs : Comma<Field>>
+    "}" => Decl::Record(x, tps, fs),
+
+  "variant" <x : Ident> <tps : TypParams> "where"
+    <fs : ("|" <Case>)*>
+    "end" => Decl::Variant(x, tps, fs),
+
+  "class" <x : Ident> "for" <tp : TypParam> "where"
+    <ss : Sig*> "end" => Decl::Class(x, tp, ss),
+
+  "impl" <x : Ident> "for" <t : Type> "where"
+    <ss : FunDefn*> "end" => Decl::Impl(x, t, ss),
+
+  "type" <x : Ident> <tps : TypParams> "=" <t : Type> =>
+    Decl::Type(x, tps, t),
+};
+
+pub Prog = Decl*

@@ -7,7 +7,7 @@ lalrpop_mod!(pub parser);
 fn main() {
   let expr = parser::ExprParser::new();
   let typ = parser::TypeParser::new();
-  let block  = parser::BlockParser::new();
+  let block = parser::BlockParser::new();
 
   println!("Hello, world!");
   println!("Debug: {:?}", expr.parse("foo[i32](x, ~a || b, ()) * 7 + false"));

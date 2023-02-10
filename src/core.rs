@@ -45,6 +45,7 @@ pub enum Type<'a> {
   TypApp(&'a str, Vec<Type<'a>>),
   Ptr(Box<Type<'a>>),
   Region,
+  Meta(Meta<'a>),
 }
 
 
@@ -100,9 +101,10 @@ pub struct Sig<'a> {
   ret : Type<'a>,
 }
 pub enum Decl<'a> {
-  FunDecl(FunDefn<'a>),
-  RecordDecl(String, Vec<TypParam>, Vec<Field<'a>>),
-  VariantDecl(String, Vec<TypParam>, Vec<Field<'a>>),
-  ClassDecl(String, TypParam, Vec<Sig<'a>>),
-  ImplDecl(String, Type<'a>, Vec<FunDefn<'a>>),
+  Fun(FunDefn<'a>),
+  Record(String, Vec<TypParam>, Vec<Field<'a>>),
+  Variant(String, Vec<TypParam>, Vec<Field<'a>>),
+  Class(String, TypParam, Vec<Sig<'a>>),
+  Impl(String, Type<'a>, Vec<FunDefn<'a>>),
+  Type(String, Vec<TypParam>, Type<'a>),
 }
